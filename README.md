@@ -13,3 +13,7 @@ Create a new web service with the following values:
   * Start Command: `node app.js`
 
 That's it! Your web service will be live on your Render URL as soon as the build finishes.
+
+### Deployment link
+
+Requisição GET com o Authorization Bearer TOKEN na seguinte URL: https://strateegia-aggregate-api.onrender.com/aggregate-data?projectId={{projectId}}&mode=usu%C3%A1rio
