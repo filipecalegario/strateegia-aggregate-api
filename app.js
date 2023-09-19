@@ -1,61 +1,72 @@
 const express = require("express");
+const axios = require("axios"); // Usaremos axios para fazer as chamadas HTTP
+let strateegia;
+
+import("strateegia-api")
+    .then((module) => {
+        strateegia = module;
+        // o restante do seu código que usa strateegia vai aqui
+    })
+    .catch((err) => {
+        console.error("Erro ao importar o módulo strateegia-api:", err);
+    });
+
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.get("/", (req, res) => res.type('html').send(html));
+// Middleware para extrair Bearer token
+app.use((req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res
+            .status(401)
+            .send({ error: "Token não fornecido ou inválido." });
+    }
 
-const server = app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+    const token = authHeader.split(" ")[1];
+    req.token = token; // Anexamos o token à request para uso posterior
+    next();
+});
 
-server.keepAliveTimeout = 120 * 1000;
-server.headersTimeout = 120 * 1000;
+app.get("/aggregate-data", async (req, res) => {
+    const projectId = req.query.projectId;
+    const mode = req.query.mode;
 
-const html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Hello from Render!</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script>
-      setTimeout(() => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          disableForReducedMotion: true
+    // Validação básica dos parâmetros recebidos
+    if (!projectId) {
+        return res.status(400).send({ error: "ID do projeto é obrigatório." });
+    }
+
+    if (!mode || (mode !== "project" && mode !== "user")) {
+        return res
+            .status(400)
+            .send({ error: 'Modo inválido. Deve ser "project" ou "user".' });
+    }
+
+    console.log(
+        `Recebida requisição para o projeto ${projectId} no modo ${mode}.`
+    );
+
+    try {
+        // Aqui, faça suas chamadas à API da Strateegia usando o Bearer token
+
+        const config = {
+            headers: { Authorization: `Bearer ${req.token}` },
+        };
+
+        const response1 = await strateegia.getAllProjects(req.token);
+
+        // Agregue os dados conforme necessário. Isso é apenas um exemplo básico:
+        const aggregatedData = response1;
+
+        res.json(aggregatedData);
+    } catch (error) {
+        res.status(500).send({
+            error: "Erro ao buscar dados da API Strateegia.",
         });
-      }, 500);
-    </script>
-    <style>
-      @import url("https://p.typekit.net/p.css?s=1&k=vnd5zic&ht=tk&f=39475.39476.39477.39478.39479.39480.39481.39482&a=18673890&app=typekit&e=css");
-      @font-face {
-        font-family: "neo-sans";
-        src: url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff2"), url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff"), url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/a?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("opentype");
-        font-style: normal;
-        font-weight: 700;
-      }
-      html {
-        font-family: neo-sans;
-        font-weight: 700;
-        font-size: calc(62rem / 16);
-      }
-      body {
-        background: white;
-      }
-      section {
-        border-radius: 1em;
-        padding: 1em;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        margin-right: -50%;
-        transform: translate(-50%, -50%);
-      }
-    </style>
-  </head>
-  <body>
-    <section>
-      Hello from Render!
-    </section>
-  </body>
-</html>
-`
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Servidor rodando na porta ${port}`);
+});
