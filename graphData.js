@@ -10,7 +10,7 @@
 //     });
 
 async function gatherGraphData(accessToken, projectId, mode, api) {
-    console.log(api);
+    //console.log(api);
 
     const cData = {
         nodes: [],
