@@ -11,6 +11,8 @@ import("strateegia-api")
         console.error("Erro ao importar o módulo strateegia-api:", err);
     });
 
+const graphData = require("./graphData");
+
 const app = express();
 const port = process.env.PORT || 3001;
 
@@ -37,10 +39,10 @@ app.get("/aggregate-data", async (req, res) => {
         return res.status(400).send({ error: "ID do projeto é obrigatório." });
     }
 
-    if (!mode || (mode !== "project" && mode !== "user")) {
+    if (!mode || (mode !== "projeto" && mode !== "usuário")) {
         return res
             .status(400)
-            .send({ error: 'Modo inválido. Deve ser "project" ou "user".' });
+            .send({ error: 'Modo inválido. Deve ser "projeto" ou "usuário".' });
     }
 
     console.log(
@@ -54,7 +56,13 @@ app.get("/aggregate-data", async (req, res) => {
             headers: { Authorization: `Bearer ${req.token}` },
         };
 
-        const response1 = await strateegia.getAllProjects(req.token);
+        // const response1 = await strateegia.getProjectById(req.token, projectId);
+        const response1 = await graphData(
+            req.token,
+            projectId,
+            mode,
+            strateegia
+        );
 
         // Agregue os dados conforme necessário. Isso é apenas um exemplo básico:
         const aggregatedData = response1;
@@ -62,7 +70,7 @@ app.get("/aggregate-data", async (req, res) => {
         res.json(aggregatedData);
     } catch (error) {
         res.status(500).send({
-            error: "Erro ao buscar dados da API Strateegia.",
+            error: `Erro ao buscar dados da API Strateegia. ${error}`,
         });
     }
 });
